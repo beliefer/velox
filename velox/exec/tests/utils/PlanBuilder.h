@@ -33,6 +33,7 @@ namespace facebook::velox::exec::test {
 
 struct PushdownConfig {
   common::SubfieldFilters subfieldFiltersMap;
+  std::string remainingFilter;
 };
 
 /// A builder class with fluent API for building query plans. Plans are built
@@ -175,14 +176,12 @@ class PlanBuilder {
   ///
   /// @param outputType List of column names and types to read from the table.
   /// @param PushdownConfig Contains pushdown configs for the table scan.
-  /// @param remainingFilter SQL expression for the additional conjunct.
   /// @param dataColumns Optional data columns that may differ from outputType.
   /// @param assignments Optional ColumnHandles.
 
   PlanBuilder& tableScanWithPushDown(
       const RowTypePtr& outputType,
       const PushdownConfig& pushdownConfig,
-      const std::string& remainingFilter = "",
       const RowTypePtr& dataColumns = nullptr,
       const connector::ColumnHandleMap& assignments = {});
 
@@ -321,7 +320,6 @@ class PlanBuilder {
     std::string tableName_{"hive_table"};
     std::string connectorId_{kHiveDefaultConnectorId};
     RowTypePtr outputType_;
-    std::vector<core::ExprPtr> subfieldFilters_;
     core::ExprPtr remainingFilter_;
     RowTypePtr dataColumns_;
     std::unordered_map<std::string, std::string> columnAliases_;
@@ -593,6 +591,17 @@ class PlanBuilder {
   /// will produce projected columns named sum_ab, c and p2.
   PlanBuilder& project(const std::vector<std::string>& projections);
 
+  /// Add a ParallelProjectNode using groups of independent SQL expressions.
+  ///
+  /// @param projectionGroups One or more groups of expressions that depend on
+  /// disjunct sets of inputs.
+  /// @param noLoadColumn Optional columns to pass through as is without
+  /// loading. These columns must be distinct from the set of columns used in
+  /// 'projectionGroups'.
+  PlanBuilder& parallelProject(
+      const std::vector<std::vector<std::string>>& projectionGroups,
+      const std::vector<std::string>& noLoadColumns = {});
+
   /// Add a ProjectNode to keep all existing columns and append more columns
   /// using specified expressions.
   /// @param newColumns A list of one or more expressions to use for computing
@@ -604,6 +613,7 @@ class PlanBuilder {
   /// the type.
   PlanBuilder& projectExpressions(
       const std::vector<core::ExprPtr>& projections);
+
   PlanBuilder& projectExpressions(
       const std::vector<core::TypedExprPtr>& projections);
 

@@ -669,10 +669,10 @@ class Task : public std::enable_shared_from_this<Task> {
 
   /// Invoked once by a driver thread to signal it has finished the barrier
   /// processing when all its operators have drained their output and the sink
-  /// operator has propogated the drain signal to all its downstream pipelines
+  /// operator has propagated the drain signal to all its downstream pipelines
   /// through the connected queues. Upon the last driver thread call, the task
   /// finishes the current barrier processing and 'barrierFinishPromises_' are
-  /// fullfiled to resume barrier request caller.
+  /// fulfilled to resume barrier request caller.
   void finishDriverBarrier();
 
   /// Requests the Task to stop activity.  The returned future is
@@ -1124,6 +1124,11 @@ class Task : public std::enable_shared_from_this<Task> {
 
   void initSplitListeners();
 
+  /// Checks if the task supports barrier processing. Barrier processing is
+  /// supported when the task is under single threaded execution mode and all
+  /// its plan nodes support barrier processing.
+  void ensureBarrierSupport() const;
+
   // Universally unique identifier of the task. Used to identify the task when
   // calling TaskListener.
   const std::string uuid_;
@@ -1146,10 +1151,10 @@ class Task : public std::enable_shared_from_this<Task> {
 
   core::PlanFragment planFragment_;
 
-  // Indicates if this task supports barrier processing. It is set to true if
-  // the task is under single threaded execution mode and all its plan nodes
-  // support barrier processing.
-  const bool supportBarrier_;
+  // First node in the plan fragment that does not support barrier processing.
+  // Barrier is supported when the task is under single threaded execution mode
+  // and all its plan nodes support barrier processing.
+  const core::PlanNode* firstNodeNotSupportingBarrier_{};
 
   const std::optional<TraceConfig> traceConfig_;
 
