@@ -59,14 +59,23 @@ std::string __libcpp_tzdb_directory() {
 #if !defined(__APPLE__)
   CONSTDATA auto tz_dir_default = "/usr/share/zoneinfo";
   CONSTDATA auto tz_dir_buildroot = "/usr/share/zoneinfo/uclibc";
+  CONSTDATA auto tz_dir_pyenv = "/home/hadoop/.pyenv/versions/3.7.6/lib/python3.7/site-packages/tzdata/zoneinfo";
 
+  const char* tz_dir = tz_dir_default;
   // Check special path which is valid for buildroot with uclibc builds
-  if (stat(tz_dir_buildroot, &sb) == 0 && S_ISDIR(sb.st_mode))
-    return tz_dir_buildroot;
-  else if (stat(tz_dir_default, &sb) == 0 && S_ISDIR(sb.st_mode))
-    return tz_dir_default;
-  else
-    throw runtime_error("discover_tz_dir failed to find zoneinfo\n");
+  if (stat(tz_dir_buildroot, &sb) == 0 && S_ISDIR(sb.st_mode)) {
+    tz_dir = tz_dir_buildroot;
+  }
+  std::string tzdata_zi_path = std::string(tz_dir) + "/tzdata.zi";
+  if (stat(tzdata_zi_path.c_str(), &sb) == 0 && S_ISREG(sb.st_mode)) {
+    return tz_dir;
+  }
+
+  // check gdc pyenv path as a fallback
+  if (stat(tz_dir_pyenv, &sb) == 0 && S_ISDIR(sb.st_mode)) {
+    return tz_dir_pyenv;
+  }
+  throw runtime_error("discover_tz_dir failed to find zoneinfo\n");
 #else // __APPLE__
   CONSTDATA auto timezone = "/etc/localtime";
   if (!(lstat(timezone, &sb) == 0 && S_ISLNK(sb.st_mode) && sb.st_size > 0))
