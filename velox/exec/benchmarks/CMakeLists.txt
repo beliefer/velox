@@ -80,7 +80,8 @@ target_link_libraries(
   velox_exec_test_lib
   velox_vector_fuzzer
   velox_vector_test_lib
-  Folly::follybenchmark)
+  Folly::follybenchmark
+)
 
 add_executable(velox_hash_join_prepare_join_table_benchmark HashJoinPrepareJoinTableBenchmark.cpp)
 
